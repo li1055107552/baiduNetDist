@@ -1,6 +1,6 @@
 # data
 _data/*
-*.json
+# *.json
 *.mp4
 tmp
 
