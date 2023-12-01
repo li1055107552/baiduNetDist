@@ -4,6 +4,12 @@ const fs = require('fs')
 const PROJECT_ROOT_PATH = path.join(path.resolve(__dirname), "..")
 
 module.exports = {
+    /**
+     * 
+     * @param {Enum} searchKey ["access_token", "baidu_name", "netdisk_name", "uk"]
+     * @param {String} searchValue 
+     * @returns info | null
+     */
     searchUser(searchKey, searchValue) {
         if (!["access_token", "baidu_name", "netdisk_name", "uk"].includes(searchKey)) return null
         

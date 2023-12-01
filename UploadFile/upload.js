@@ -15,8 +15,22 @@ function onUploadProgress(progressEvent) {
 }
 
 module.exports = {
-    // 上传前的文件准备工作
+
+    /**
+     * @description 上传前的文件准备工作, 进行分片等操作
+     * @param {Number} vip_type 用户类型
+     * @param {String} filepath 需要上传的文件的绝对路径
+     * @returns {Object} 请求返回值
+     * @property {String} fileMD5 上传文件的MD5
+     * @property {String} filepath 上传文件的绝对路径
+     * @property {Number} fileSize 上传文件的总大小(byte)
+     * @property {Object[]} fileTmp 上传文件所有的分片信息
+     */
     preUpload: function (vip_type = 0, filepath) {
+
+        if(!path.isAbsolute(filepath))  throw Error(`${filepath} is not a Absolute Path.`)
+        if(!fs.existsSync(filepath))    throw Error(`file: ${filepath} is not exist.`)
+
         fs.existsSync(TMP_PATH) ?
             fs.readdirSync(TMP_PATH) ?
                 (fs.rmSync(TMP_PATH, { recursive: true, force: true }) & fs.mkdirSync(TMP_PATH)) :
@@ -27,6 +41,7 @@ module.exports = {
 
         // 判断是 普通用户=4M | 普通会员=16M | 超级会员=32M 来决定上传的块的上限
         let block_size = (vip_type == 2 ? 32 : vip_type == 1 ? 16 : 4) * 1024 * 1024
+
         let fileStat = fs.statSync(filepath)
 
         let res = {
@@ -68,7 +83,14 @@ module.exports = {
         return res
     },
 
-    // 预上传
+    /**
+     * @description 预上传
+     * @param {String} access_token 
+     * @param {String} savePath 网盘保存的路径
+     * @param {Number} fileSize 文件总大小, 通过 preUpload() 可得到
+     * @param {Array} block_list 所有分片的MD5, 通过 preUpload() 可得到分片信息
+     * @returns {Object} 请求返回值
+     */
     preCreate: async function (access_token, savePath, fileSize, block_list) {
         let conf = {
             path: savePath,     // 网盘路径
@@ -79,7 +101,7 @@ module.exports = {
             block_list: block_list      // 所有分片的MD5
         }
         let parme = formatParme(conf)
-        console.log(parme);
+        
         return new Promise((resolve, reject) => {
             axios.post(`http://pan.baidu.com/rest/2.0/xpan/file?method=precreate&access_token=${access_token}`, parme, {
                 headers: {
@@ -87,17 +109,25 @@ module.exports = {
                     "Content-Type": "application/x-www-form-urlencoded"
                 }
             }).then(res => {
-                console.log(res)
+                // console.log(res)
                 resolve(res.data)
             }).catch(err => {
-                console.error(err);
+                // console.error(err);
                 reject(err)
             })
         })
 
     },
 
-    // 分片上传
+    /**
+     * @description 分片上传
+     * @param {String} access_token 
+     * @param {String} savePath 网盘保存的路径
+     * @param {String} uploadid 上传id, 通过 preCreate() 返回得到
+     * @param {Number} partseq 分片下标序号
+     * @param {String} blockPath 分片文件的路径 通过 preUpload() 可得到分片信息
+     * @returns {Object} 请求返回值
+     */
     superfile2: async function (access_token, savePath, uploadid, partseq, blockPath) {
         let data = new FormData();
         data.append('file', fs.createReadStream(blockPath));
@@ -107,18 +137,26 @@ module.exports = {
                 headers: {
                     'Content-Type': 'multipart/form-data;'
                 },
-                onUploadProgress: onUploadProgress
+                // onUploadProgress: onUploadProgress
             }).then(res => {
-                console.log(res.data)
+                // console.log(res.data)
                 resolve(res.data)
             }).catch(err => {
-                console.error(err);
+                // console.error(err);
                 reject(err)
             })
         })
     },
 
-    // 创建文件
+    /**
+     * @description 创建文件
+     * @param {String} access_token 
+     * @param {String} uploadid 上传id, 通过 preCreate() 返回得到
+     * @param {String} savePath 网盘保存的路径
+     * @param {Number} size 文件总大小, 通过 preUpload() 可得到
+     * @param {Array} block_list 所有分片的MD5, 通过 preUpload() 可得到分片信息
+     * @returns 
+     */
     create: async function (access_token, uploadid, savePath, size, block_list) {
         let conf = {
             path: savePath,
@@ -135,10 +173,10 @@ module.exports = {
                     "User-Agent": "pan.baidu.com"
                 }
             }).then(res => {
-                console.log(res)
+                // console.log(res)
                 resolve(res.data)
             }).catch(err => {
-                console.error(err);
+                // console.error(err);
                 reject(err)
             })
         })

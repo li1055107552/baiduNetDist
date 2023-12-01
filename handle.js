@@ -1,21 +1,3 @@
-const data = {
-    "expires_in": 2592000,
-    "refresh_token": "",
-    "access_token": "",
-    "session_secret": "",
-    "session_key": "",
-    "scope": "basic netdisk",
-    "avatar_url": "",
-    "baidu_name": "",
-    "errmsg": "succ",
-    "errno": 0,
-    "netdisk_name": "",
-    "request_id": "",
-    "uk": "",
-    "vip_type": "",
-    "ctime": ""
-}
-
 const path = require('path')
 const upload = require('./UploadFile/upload')
 const user = require('./User/searchUser')
@@ -31,6 +13,8 @@ class UploadTask {
 
     auth(baidu_name = "") {
         let userInfo = user.searchUser("baidu_name", baidu_name == "" ? this._baidu_name : baidu_name)
+        console.log(userInfo);
+        debugger
         if (userInfo == null) {
             this._isAuth = false
             this._authUrl = auth.getCodeUrl()
@@ -61,6 +45,7 @@ class UploadTask {
         // 文件预处理
         let res = upload.preUpload(this._userInfo.vip_type, filePath)
 
+        // 得到所有分片MD5
         let block_list = []
         res.fileTmp.forEach(e => {
             block_list.push(e.blockMD5)
@@ -124,7 +109,7 @@ class UploadTask {
 module.exports = UploadTask
 
 async function ttt() {
-    let uploadTask = new UploadTask("li1055107552123")
+    let uploadTask = new UploadTask("li1055107552")
     console.log(uploadTask)
     if (uploadTask.auth("li1055107552")) {
         // const filePath = "./yj.jpg"
@@ -147,4 +132,4 @@ async function test() {
 }
 // test()
 
-console.log('finish')
+// console.log('finish')

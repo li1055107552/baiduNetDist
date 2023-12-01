@@ -3,16 +3,9 @@ const fs = require('fs')
 const axios = require('axios')
 const formatParme = require('../utils/formatParme')
 
-const conf = {
-    client_id: "",                              // 您应用的AppKey
-    client_secret: "",                          // 您应用的SecretKey
-    redirect_uri: "http://your_ip/path",        // 您应用的授权回调地址
-    device_id: "",                              // 您应用的AppID
-    scope: "basic,netdisk",                     // 权限
-}
+const conf = require('../_data/conf')
 
-
-module.exports = {
+module.exports = that = {
     // 接收Code
     AuthCode: async function(ctx){
         
@@ -64,7 +57,7 @@ module.exports = {
             redirect_uri: conf.redirect_uri
         }
         let url = baseURL + "&" + formatParme(parme)
-    
+        
         return new Promise((resolve, reject) => {
             axios.get(url).then(res => {
                 console.log(res.data);
@@ -98,14 +91,19 @@ module.exports = {
 
 async function main(){
     try {
-        let {access_token, refresh_token} = await getAccessToken("")
+        let {access_token, refresh_token} = await this.getAccessToken("8f84b78e230d744ff141922b0ecf315b")
         console.log(access_token, refresh_token)
 
-        let {new_access_token, new_refresh_token} = await refresh_AccessToken(refresh_token)
+        let {new_access_token, new_refresh_token} = await this.refresh_AccessToken(refresh_token)
         console.log(new_access_token, new_refresh_token)
 
     } catch (error) {
-        
+        console.log(error);
+        console.log('finish')
     }
     console.log('finish')
 }
+
+
+// let that = require("./auth.js")
+main.call(that)
