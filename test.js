@@ -1,6 +1,6 @@
 const path = require('path');
 const conf = require('./_data/conf')
-const data = JSON.parse(require('fs').readFileSync('./_data/authInfos.json', "utf-8"))["your_uk"]
+const data = JSON.parse(require('fs').readFileSync('./_data/authInfos.json', "utf-8"))["2701683811"]
 
 function formatParme_test() {
     const formatParme = require('./utils/formatParme')
@@ -22,6 +22,25 @@ function searchUser_test() {
     return res
 }
 // searchUser_test()
+
+function refresh_token_test() {
+    const { writeFileSync } = require('fs')
+    const { refresh_AccessToken } = require('./Auth/auth')
+    let new_data = JSON.parse(JSON.stringify(data))
+    return refresh_AccessToken(data.refresh_token).then(res => {
+        console.log(res);
+        for (const key in res) {
+            if (Object.hasOwnProperty.call(res, key)) {
+                const value = res[key];
+                new_data[key] = value
+            }
+        }
+        writeFileSync('./_data/authInfos.json', JSON.stringify(new_data, null, 2), "utf-8")
+        console.log('finish')
+        return res
+    })
+}
+// refresh_token_test()
 
 // 获取用户信息
 function getUserInfo_test() {
@@ -231,7 +250,7 @@ function handle_test() {
         let fileTmp = result.preUpload.fileTmp
         function loopback(index, res = []) {
             if (index == fileTmp.length) return Promise.resolve(res)
-            console.log(`正在上传第 ${index+1}/${fileTmp.length} 个分片...`);
+            console.log(`正在上传第 ${index + 1}/${fileTmp.length} 个分片...`);
             return upload.superfile2(
                 defalutData.access_token,
                 defalutData.savePath,
@@ -240,9 +259,9 @@ function handle_test() {
                 fileTmp[index].blockPath
             ).then(response => {
                 if (response.md5 === fileTmp[index].blockMD5) {
-                    console.log(`第 ${index+1}/${fileTmp.length} 个分片上传成功.`);
+                    console.log(`第 ${index + 1}/${fileTmp.length} 个分片上传成功.`);
                 } else {
-                    console.error(`第 ${index+1}/${fileTmp.length} 个分片上传失败, MD5 不匹配`);
+                    console.error(`第 ${index + 1}/${fileTmp.length} 个分片上传失败, MD5 不匹配`);
                 }
                 res.push(response)
                 return loopback(index + 1, res)
@@ -298,4 +317,4 @@ function handle_test() {
 
     console.log('finish')
 }
-handle_test()
+// handle_test()
