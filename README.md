@@ -15,6 +15,17 @@
 
 4. 进入到应用里，然后将 `Auth/auth.js` 里的 `conf` 信息完善
 
+```js
+// _data/conf.js
+module.exports = {
+    "client_id": "",            // 您应用的AppKey
+    "client_secret": "",        // 您应用的SecretKey
+    "redirect_uri": "",         // 您应用的授权回调地址
+    "device_id": "",            // 您应用的AppID
+    "scope": "basic,netdisk"    // 权限
+}
+```
+
 ---
 
 ### 2. 扫码授权
