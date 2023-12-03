@@ -39,7 +39,7 @@ module.exports = {
 ### 3. 准备上传
 
 1. 准备好需要上传的文件
-2. 完善 `handle.js` 这个文件 中的 `async function ttt()` 
+2. 完善 `handle.js` 这个文件 中的 `async function ttt()`
 3. 启动 `handle.js`
 
 ## 文件解释
