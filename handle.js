@@ -13,8 +13,8 @@ class UploadTask {
 
     auth(baidu_name = "") {
         let userInfo = user.searchUser("baidu_name", baidu_name == "" ? this._baidu_name : baidu_name)
-        console.log(userInfo);
-        debugger
+        // console.log(userInfo);
+        // debugger
         if (userInfo == null) {
             this._isAuth = false
             this._authUrl = auth.getCodeUrl()
@@ -38,63 +38,121 @@ class UploadTask {
             status: false,
             msg: "missing parme 'filePath'"
         }
-        filePath = path.resolve(filePath)
+
         let defaultUploadPath = "/apps/NAS同步/" + path.basename(filePath)  // 默认上传路径
         let uploadPath = savePath == "" ? defaultUploadPath : savePath      // 实际上传路径
 
-        // 文件预处理
-        let res = upload.preUpload(this._userInfo.vip_type, filePath)
-
-        // 得到所有分片MD5
-        let block_list = []
-        res.fileTmp.forEach(e => {
-            block_list.push(e.blockMD5)
-        });
-
-        // 预上传
-        let preCreateRes = await upload.preCreate(this._userInfo.access_token, uploadPath, res.fileSize, block_list)
-        console.log(preCreateRes)
-
-        // 预上传成功 && 需上传的block数量 == 文件分片数量
-        if (preCreateRes.errno == 0 && preCreateRes.block_list.length == res.fileTmp.length) {
-            // 获得uploadID
-            let uploadid = preCreateRes.uploadid
-            let promiseArr = []
-            // 开始上传
-            for (let i = 0; i < res.fileTmp.length; i++) {
-                const block = res.fileTmp[i];
-                console.log(`共${res.fileTmp.length}个，正在上传第${i + 1}个`);
-                console.log(block);
-                // 并发上传，不能用!!!服务器会报500 
-                // promiseArr.push(upload.superfile2(this._userInfo.access_token, uploadPath, uploadid, i, block.blockPath))
-
-                // 分片上传
-                let uploadres = await upload.superfile2(this._userInfo.access_token, uploadPath, uploadid, i, block.blockPath)
-                // 校验云端文件MD5和本地文件的MD5
-                if (uploadres.md5 != block.blockMD5) {
-                    console.log('文件上传检验失败')
-                    return null
-                }
-            }
-
-            // 并发上传，不能用!!!服务器会报500 
-            // let promiseRes = await Promise.all(promiseArr)
-            // for (let i = 0; i < promiseRes.length; i++) {
-            //     const uploadres = promiseRes[i];
-            //     if (uploadres.md5 !== res.fileTmp[i].blockMD5) {
-            //         console.log('文件上传检验失败')
-            //         return null
-            //     }
-            // }
-
-            // 创建文件
-            let createRes = await upload.create(this._userInfo.access_token, uploadid, uploadPath, res.fileSize, block_list)
-            console.log(createRes);
-            return {
-                status: createRes.errno == 0 ? true : false,
-                msg: createRes.errno == 0 ? "success" : createRes
-            }
+        let defalutData = {
+            filePath: path.resolve(filePath),
+            access_token: this._userInfo.access_token,
+            savePath: uploadPath,
+            block_list: []
         }
+
+        return Promise.resolve({}).then(result => {
+            console.log("开始预处理...");
+            // 预处理
+            result.preUpload = upload.preUpload(this._userInfo.vip_type, defalutData.filePath)
+            // console.log(result.preUpload);
+            console.log("预处理完成.");
+            return result
+
+        }).then(result => {
+            console.log("开始文件预上传...")
+            // 文件预上传
+            let block_list = []
+            let preUploadData = result.preUpload
+            preUploadData.fileTmp.forEach(e => {
+                block_list.push(e.blockMD5)
+            });
+            defalutData.block_list = block_list
+
+            return upload.preCreate(
+                defalutData.access_token,
+                defalutData.savePath,
+                preUploadData.fileSize,
+                block_list
+            ).then(res => {
+                // console.log(res);
+                if (res.errno !== 0) throw new Error(`preCreate fail: errno: ${res.errno}`)
+                result.preCreate = res
+                console.log("预上传完成.");
+                return result
+            })
+
+        }).then(result => {
+            console.log("开始分片上传...");
+            // 分片上传
+            let fileTmp = result.preUpload.fileTmp
+            function loopback(index, res = []) {
+                if (index == fileTmp.length) return Promise.resolve(res)
+                console.log(`正在上传第 ${index + 1}/${fileTmp.length} 个分片...`);
+                return upload.superfile2(
+                    defalutData.access_token,
+                    defalutData.savePath,
+                    result.preCreate.uploadid,
+                    index,
+                    fileTmp[index].blockPath
+                ).then(response => {
+                    if (response.md5 === fileTmp[index].blockMD5) {
+                        console.log(`第 ${index + 1}/${fileTmp.length} 个分片上传成功.`);
+                    } else {
+                        console.error(`第 ${index + 1}/${fileTmp.length} 个分片上传失败, MD5 不匹配`);
+                    }
+                    res.push(response)
+                    return loopback(index + 1, res)
+                }).catch(err => {
+                    console.log(err.data);
+                    return err.data
+                })
+            }
+
+            return loopback(0, []).then(res => {
+                // console.log(res);
+                result.superfile2 = res
+                console.log("分片上传完成.");
+                return result
+            })
+
+        }).then(result => {
+            console.log("开始创建远端文件...");
+            // 创建远端文件
+            return upload.create(
+                defalutData.access_token,
+                result.preCreate.uploadid,
+                defalutData.savePath,
+                result.preUpload.fileSize,
+                defalutData.block_list
+            ).then(res => {
+                // console.log(res);
+                // res = {
+                //     "category": 1,
+                //     "ctime": 1701458917,
+                //     "errno": 0,
+                //     "from_type": 1,
+                //     "fs_id": 924098806551747,
+                //     "isdir": 0,
+                //     "md5": 'e481a130ar4a45650bec95bba9f436ff',
+                //     "mtime": 1701458917,
+                //     "name": '/_upload/test_BV1as4y137E5.mp4',
+                //     "path": '/_upload/test_BV1as4y137E5.mp4',
+                //     "size": 182238232
+                // }
+                if (res.errno === 0) {
+                    console.log("创建远端文件完成.");
+                } else {
+                    console.error("创建远端文件失败.");
+                }
+                result.create = res
+                return result
+            })
+        }).then(result => {
+            console.log("执行结束.");
+            console.log(result);
+            console.log('finish')
+            return result
+
+        })
 
         return {
             status: false,
@@ -110,10 +168,12 @@ module.exports = UploadTask
 
 async function ttt() {
     let uploadTask = new UploadTask("li1055107552")
-    console.log(uploadTask)
+    // console.log(uploadTask)
     if (uploadTask.auth("li1055107552")) {
         // const filePath = "./yj.jpg"
-        const filePath = "./BV1as4y137E5.mp4"
+        // const filePath = "./BV1as4y137E5.mp4"
+        const filePath = "/home/ubuntu/project/Bilibili/autoDownload/download/BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4"
+        // const filePath = `E://_Project//B站//功能集合//autoDownload//download//BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4`
         let res = await uploadTask.create(filePath, `/_upload/${path.basename(filePath)}`)
         console.log(res);
         console.log('finish')
@@ -122,7 +182,7 @@ async function ttt() {
 // ttt()
 
 async function test() {
-    const filePath = "./yj.jpg"     // "./BV1as4y137E5.mp4"
+    const filePath = "./download/BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4"     // "./BV1as4y137E5.mp4"
     const savePath = "/apps/NAS同步/" + path.basename(filePath)
 
 
@@ -132,4 +192,4 @@ async function test() {
 }
 // test()
 
-// console.log('finish')
+console.log('finish')

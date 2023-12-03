@@ -81,6 +81,15 @@ module.exports = that = {
             let url = baseURL + "&" + formatParme(parme)
     
             axios.get(url).then(res => {
+                // res.data = {
+                //     expires_in: 2592000,
+                //     refresh_token: "xxx",
+                //     access_token: "xxx",
+                //     session_secret: "",
+                //     session_key: "",
+                //     scope: "basic netdisk"
+                // }
+                
                 resolve(res.data)
             }).catch(err => {
                 reject(err)
@@ -106,4 +115,4 @@ async function main(){
 
 
 // let that = require("./auth.js")
-main.call(that)
+// main.call(that)

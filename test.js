@@ -170,17 +170,17 @@ function superfile2_test() {
 // 创建远端文件
 function create_test() {
     const upload = require('./UploadFile/upload')
-    let uploadid = 'P1-MTAuMzkuMi4yNDoxNzAxNDU2NzY5Ojg5MjUzMDA3NjY3MTk5NjYxNjg='
-    let savePath = "/_upload/test_BV1as4y137E5.mp4"
-    return preUpload_test().then(result => {
+    let uploadid = 'N1-NDIuMTk0LjEzMS42MzoxNzAxNjIzMzMwOjg5NzAwMTE3NjY4MDU3MzE3NDE='
+    let savePath = "/_upload/BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4"
+    // return preUpload_test().then(result => {
 
-        let block_list = []
-        let preUploadData = result.preUpload
-        preUploadData.fileTmp.forEach(e => {
-            block_list.push(e.blockMD5)
-        });
+        let block_list = ['764d7e2e5e7a7aed62b1630eb487f5f1']
+        // let preUploadData = result.preUpload
+        // preUploadData.fileTmp.forEach(e => {
+        //     block_list.push(e.blockMD5)
+        // });
 
-        upload.create(data.access_token, uploadid, savePath, preUploadData.fileSize, block_list).then(res => {
+        upload.create(data.access_token, uploadid, savePath, 23564260, block_list).then(res => {
             console.log(res);
             // res = {
             //     "category": 1,
@@ -195,11 +195,11 @@ function create_test() {
             //     "path": '/_upload/test_BV1as4y137E5.mp4',
             //     "size": 182238232
             // }
-            result.create = res
+            // result.create = res
             console.log('finish')
             return result
         })
-    })
+    // })
 }
 // create_test()
 
@@ -207,9 +207,10 @@ function handle_test() {
     const upload = require('./UploadFile/upload')
 
     let defalutData = {
-        filePath: path.resolve("BV1as4y137E5.mp4"),
+        // filePath: path.resolve("E://_Project//B站//功能集合//autoDownload//download//BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4"),
+        filePath: path.resolve("/home/ubuntu/project/Bilibili/autoDownload/download/BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4"),
         access_token: data.access_token,
-        savePath: "/_upload/test_BV1as4y137E5.mp4",
+        savePath: "/_upload/BV1cx411W7mZ-腾讯竟然在成都办了个漫展.mp4",
         block_list: []
     }
 
@@ -265,6 +266,8 @@ function handle_test() {
                 }
                 res.push(response)
                 return loopback(index + 1, res)
+            }).catch(err => {
+                console.log(err);
             })
         }
 
@@ -317,4 +320,4 @@ function handle_test() {
 
     console.log('finish')
 }
-// handle_test()
+handle_test()
